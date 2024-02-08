@@ -1,0 +1,8 @@
+---
+applications:
+- name: ds_python_test
+  memory: 64M
+  host: 
+  port: 
+  path: .
+  command: python server.py
