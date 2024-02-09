@@ -1,0 +1,1 @@
+In this blog let us see how we can bind dynamic images (i.e. based on user input) to SAPUI5 Image control.Let’s take an example of storing images of  100 employees and then displaying it as their profile pic based on employee id.
