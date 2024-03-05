@@ -1,13 +1,48 @@
 import os
-from flask import Flask, request, jsonify, make_response
-from cfenv import AppEnv
-from hdbcli import dbapi
 from io import BytesIO
+from sap import xssec
+from cfenv import AppEnv
+from flask import Flask, request, jsonify, make_response
+from hdbcli import dbapi
 
 app = Flask(__name__)
 
 # assign the port that the flask application runs on
 port = int(os.environ.get('PORT', 52000))
+
+
+@app.route('/token', methods=['GET'])
+def token():
+    status_code = 401
+    error_txt = 'Unauthorized'
+
+    # access_token = request.args.get('token', '')
+    authorization_header = request.headers.get('Authorization')
+
+    if authorization_header:
+        access_token = authorization_header.lstrip().replace('Bearer ', '')
+
+        try:
+            env = AppEnv()
+            uaa_service = env.get_service(name='UAA-service').credentials
+
+            security_context = xssec.create_security_context(access_token, uaa_service)
+            my_email = security_context.get_email()
+            my_exp_date = security_context.get_expiration_date()
+
+            status_code = 200
+            error_txt = ''
+            response_txt = f'email: {my_email};  exp_date: {my_exp_date}; \n \n {access_token}'
+        except Exception as e:
+            error_txt += f" \n\nAdditional error description: {e}"
+            response_txt = error_txt
+    else:
+        response_txt = error_txt + "\n\nNo authorization token"
+
+    response = make_response(response_txt)
+    response.headers['Content-Type'] = 'text/plain'
+    response.status_code = status_code
+    return response
 
 
 @app.route('/', methods=['GET'])
@@ -181,6 +216,7 @@ def update_training_file(connection, scheme, file_path):
         cursor.close()
 
     return db_error
+
 
 def get_file_list(directory="."):
     try:
